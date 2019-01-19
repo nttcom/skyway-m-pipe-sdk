@@ -13,6 +13,17 @@ const {
   base64ToObj
 } = require('../libs/util')
 
+
+/////////////////////////////////////////////////////////////////////////////////////
+// BEGIN: initialize trace agent
+//
+// note: Do not require `@google-cloud/trace-agent` from outside of this library
+// It will make confliction error state since `trace-agent` has a monkey patch code
+//
+// Please import `tracer` instance of this library and use it, if you want to use
+// `@google-cloud/trace` feature from outside of this code.
+/////////////////////////////////////////////////////////////////////////////////////
+
 let tracer
 
 if( trace !== 'off' ) {
@@ -35,9 +46,9 @@ if( trace !== 'off' ) {
     cb(null)
   }
 }
-
-
-
+/////////////////////////////////////////////////////////////////////////////////////
+// FINISH: initialize trace agent
+/////////////////////////////////////////////////////////////////////////////////////
 
 const EventEmitter = require('events')
 const path = require('path');
@@ -326,5 +337,6 @@ class OutputStream {
 
 module.exports = {
   InputStream,
-  OutputStream
+  OutputStream,
+  tracer
 }
