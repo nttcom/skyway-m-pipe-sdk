@@ -1,0 +1,22 @@
+{
+  "name": "skyway-m-pipe-sdk",
+  "version": "0.0.1",
+  "description": "SDK for m-pipe",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "author": "NTT Communications <skyway@ntt.com> (http://skyway.io)",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/trace-agent": "^3.4.0",
+    "@grpc/proto-loader": "^0.3.0",
+    "grpc": "^1.16.0",
+    "node-fetch": "^2.2.1",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "jest": "^23.6.0"
+  }
+}
