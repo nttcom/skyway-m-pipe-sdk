@@ -80,5 +80,15 @@ const eventGateway = new EventGateway( { host: evHost } )
 eventGateway.emit('webrtc.session.closed', { token })
 ```
 
+## test
+
+> You need to prepare docker environment for testing
+
+### unit test and integration test with Event Gateway
+
+```
+npm run test
+```
+
 ---
 Copyright. NTT Communications Corporation All rights reserved.

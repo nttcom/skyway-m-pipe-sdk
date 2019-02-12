@@ -140,7 +140,7 @@ class InputStream extends EventEmitter {
 
       // when mpipeStreamStatus is not `200` after 250msec,
       // we will start reconnection to server.
-      setTimeout( ev => {
+      setTimeout( () => {
         if(this.mpipeStreamStatus !== '200') {
           stream.cancel()
           client.close()
