@@ -1,5 +1,8 @@
-const fetch = require('node-fetch');
 const uuidv4 = require('uuid/v4');
+
+const {
+  fetchWithReconnection,
+} = require('../libs/util')
 
 const defaultProps = {
   protocol: 'http',
@@ -8,10 +11,30 @@ const defaultProps = {
   ctrlPort: 4001,
   space: 'default',
   source: 'https://serverless.com/event-gateway/#transformationVersion=0.1',
-  cloudEventsVersion: '0.1'
+  cloudEventsVersion: '0.1',
+  timeout: 7000,
+  max: 10,
+  retryStatuses: [],
+  ignoreStatuses: []
 }
 
 class EventGateway {
+  /**
+   * constructor
+   *
+   * @params {object} props
+   * @params {string} [props.protocol=http]
+   * @params {string} [props.host=127.0.0.1]
+   * @params {number} [props.port=4000]
+   * @params {number} [props.ctrlPort=4001]
+   * @params {string} [props.space='default']
+   * @params {string} [props.source='https://serverless.com/event-gateway/#transformationVersion=0.1']
+   * @params {cloudEventVersion} [props.cloudEventVersion='0.1']
+   * @params {number} [props.timeout=7000] - timeout value when establishing connection with EG
+   * @params {number} [props.max=10] - max number of retry
+   * @params {Array<number>} [props.retryStatuses=[]] - e.g. [400] ... retry when receive error from EG
+   * @params {Array<number>} [props.ignoreStatuses=[]] - e.g. [409] ... ignore error when receive error from EG
+   */
   constructor( props ) {
     this.props = Object.assign( {}, defaultProps, props )
   }
@@ -28,6 +51,10 @@ class EventGateway {
   async registUrl(functionId, url) {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/functions`
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       functionId,
       type: 'http',
@@ -36,7 +63,7 @@ class EventGateway {
       }
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -79,11 +106,15 @@ class EventGateway {
   async createEvent(name) {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/eventtypes`
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       name
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -131,6 +162,10 @@ class EventGateway {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/subscriptions`
     const _path = path || '/'
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       type: 'async',
       eventType,
@@ -138,7 +173,7 @@ class EventGateway {
       path: _path
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -184,6 +219,10 @@ class EventGateway {
     const _path = path || '/'
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.port}${_path}`
 
+    const headers = {
+      "Content-Type": "application/cloudevents+json"
+    }
+
     const body = {
       eventType,
       eventID: uuidv4(),
@@ -194,7 +233,7 @@ class EventGateway {
       contentType: 'application/json'
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
 
@@ -231,25 +270,38 @@ class EventGateway {
    * post
    *
    * @param {string} url
+   * @param {object} headers
    * @param {object} data
    * @return {Promise<object>}
    *
    * @private
    */
-  async _post( url, data ) {
-    const res = await fetch( url, {
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/cloudevents+json",
-      },
-      body: JSON.stringify(data),
-    })
+  async _post( url, headers, data ) {
+    try {
+      const options = {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data)
+      }
+      const res = await fetchWithReconnection(
+        url,
+        options,
+        this.props.timeout,
+        this.props.max,
+        this.props.retryStatuses,
+        this.props.ignoreStatuses
+      )
 
-    if (res.status < 200 || res.status > 299) {
-      const data = await res.text();
-      throw new Error(`Error on posting event ${res.status} ${data}`);
-    } else {
-      return await res.text()
+      const text = await res.text()
+
+      try {
+        const json = JSON.parse( text )
+        return json
+      } catch(err) {
+        return text
+      }
+    } catch(err) {
+      throw err
     }
   }
 
@@ -262,15 +314,22 @@ class EventGateway {
    * @private
    */
   async _delete( url ) {
-    const res = await fetch( url, {
-      method: 'DELETE'
-    })
+    try {
+      const options = {
+        method: 'DELETE'
+      }
+      const res = await fetchWithReconnection(
+        url,
+        options,
+        this.props.timeout,
+        this.props.max,
+        this.props.retryStatuses,
+        this.props.ignoreStatuses
+      )
 
-    if (res.status < 200 || res.status > 299) {
-      const data = await res.text();
-      throw new Error(`Error on posting event ${res.status} ${data}`);
-    } else {
       return await res.text()
+    } catch(err) {
+      throw err
     }
   }
 
@@ -283,15 +342,22 @@ class EventGateway {
    * @private
    */
   async _get( url ) {
-    const res = await fetch( url, {
-      method: 'GET'
-    })
+    try {
+      const options = {
+        method: 'GET'
+      }
+      const res = await fetchWithReconnection(
+        url,
+        options,
+        this.props.timeout,
+        this.props.max,
+        this.props.retryStatuses,
+        this.props.ignoreStatuses
+      )
 
-    if (res.status < 200 || res.status > 299) {
-      const data = await res.text();
-      throw new Error(`Error on posting event ${res.status} ${data}`);
-    } else {
       return await res.json()
+    } catch(err) {
+      throw err
     }
   }
 }

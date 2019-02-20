@@ -5,7 +5,7 @@ const port = 10000;
 const token = 'test-token';
 
 const delay = msec => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     setTimeout( resolve, msec )
   })
 }
