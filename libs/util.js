@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const AbortController = require('abort-controller')
 const { spawn } = require('child_process')
 
-const NO_DOCKER_LOG = !!process.env.NO_DOCKER_LOG
+const NO_CHILD_PROCESS_LOG = !!process.env.NO_CHILD_PROCESS_LOG
 
 /**
  * transform object into Base64 string
@@ -31,8 +31,8 @@ function base64ToObj( str ) {
 /**
  * fetchWithTimeout
  *
- * function according to the post at stackoverflow.
- * https://www.npmjs.com/package/node-fetch#request-cancellation-with-abortsignal
+ * By using abort control, we implemented request cancellation.
+ * For more detail - https://drive.google.com/drive/u/1/folders/17ksi-wvQEELYKnn8QaL_16j1a9j0sk1L
  *
  * @params {string} url
  * @params {object} options
@@ -103,25 +103,26 @@ const fetchWithReconnection = async ( url, options, timeout=7000, max=10, retryS
     } catch(err) {
       cnt++
       // todo - check errno in network error
-      if ( (  err.type === "aborted" ||
+      if ( (  err.name === "AbortError" ||
               err.type === "retry" ||
               err.code === "ENOTFOUND" ||
               err.code === "ECONNRESET" ||
               err.code === "ECONNREFUSED" ) && cnt <= max ) {
-        // try reconnection with EventGateway
-        // ENOTFOUND : cannot find target host ( e.g. dns error )
+        // ENOTFOUND    : cannot find target host ( e.g. dns error )
+        // ECONNRESET   : disconnected connection for some reason
         // ECONNREFUSED : refused by host ( e.g. server port is not opened yet )
         console.warn( `fetchWithReconnection - reconnecting... [${cnt} / ${max}]` )
+        console.warn( `  reason - ${err.message}`)
 
         await delay( duration )
         return await _callback()
       } else {
         // throw error since num of reconnection exceeds max value
-        if (  err.type === "aborted" ||
+        if (  err.name === "AbortError" ||
               err.type === "retry" ||
               err.code === "ENOTFOUND" ||
               err.code === "ECONNRESET" ||
-              err.code === "ECONNREFUSED" ) err.type = "timeout"
+              err.code === "ECONNREFUSED" ) err.type = "retries_exceeded"
         throw err
       }
     }
@@ -183,7 +184,7 @@ function spawnProcess( title, cmd, env ) {
         started = true
         resolve( proc )
       }
-      if(!NO_DOCKER_LOG)
+      if(!NO_CHILD_PROCESS_LOG)
         console.warn( title + " : " + msg.toString() )
     })
     proc.stderr.on('data', msg => {
@@ -191,7 +192,7 @@ function spawnProcess( title, cmd, env ) {
         started = true
         resolve( proc )
       }
-      if(!NO_DOCKER_LOG)
+      if(!NO_CHILD_PROCESS_LOG)
         console.warn( title + " : " + msg.toString() )
     })
   })

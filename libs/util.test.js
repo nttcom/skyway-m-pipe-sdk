@@ -7,22 +7,6 @@ const {
   spawnProcess
 } = require('./util')
 
-let docker
-
-beforeAll( async () => {
-  await delay( 3000 )
-  docker = await spawnProcess(
-    'event-gateway',
-    'docker run -p 4000:4000 -p 4001:4001 --rm serverless/event-gateway:0.9.1 -dev -log-level DEBUG'
-  )
-})
-
-afterAll( async () => {
-  if( docker ) docker.kill('SIGHUP')
-})
-
-
-
 describe('fetchWithTimeout test', () => {
   it('will raise error when it exceeds timeout period', done => {
     fetchWithTimeout('http://127.0.0.2', { method: "GET" }, 500)
@@ -60,29 +44,47 @@ describe('fetchWithTimeout test', () => {
 })
 
 describe('fetchWithReconnection test', () => {
-  it('will raise timeout and aborted error when unexist address is set', done => {
+  it('will raise retries_exceeded and aborted error when unexist address is set', done => {
     fetchWithReconnection('http://127.0.0.2', { method: "GET" }, 100, 2)
       .catch( err => {
-        expect( err.type ).toBe("timeout")
+        expect( err.type ).toBe("retries_exceeded")
         expect( err.message ).toMatch("aborted")
         done()
       })
   })
 
-  it('will raise timeout and ENOTFOUND error when unexist hostname is set', done => {
+  it('will raise retries_exceeded and ENOTFOUND error when unexist hostname is set', done => {
     fetchWithReconnection('http://hostname', { method: "GET" }, 100, 2)
       .catch( err => {
-        expect( err.type ).toBe("timeout")
+        expect( err.type ).toBe("retries_exceeded")
         expect( err.message ).toMatch("ENOTFOUND")
         done()
       })
   })
 
-  it('will raise timeout and ECONNREFUSED error when unexist port is set', done => {
+  it('will raise retries_exceeded and ECONNREFUSED error when unexist port is set', done => {
     fetchWithReconnection('http://localhost', { method: "GET" }, 100, 2)
       .catch( err => {
-        expect( err.type ).toBe("timeout")
+        expect( err.type ).toBe("retries_exceeded")
         expect( err.message ).toMatch("ECONNREFUSED")
+        done()
+      })
+  })
+
+  it('will raise retries_exceeded and 404 error when 404 is set as retry status code', done => {
+    fetchWithReconnection('http://localhost:4001/v0', { method: "GET" }, 100, 2, [404], [])
+      .catch( err => {
+        expect( err.type ).toBe("retries_exceeded")
+        expect( err.message ).toMatch("404")
+        done()
+      })
+  })
+
+  it('will return 404 error message when 404 is set as ignore status code', done => {
+    fetchWithReconnection('http://localhost:4001/v0', { method: "GET" }, 100, 2, [], [404])
+      .then( res => res.text() )
+      .then( mesg => {
+        expect( mesg ).toMatch("404")
         done()
       })
   })

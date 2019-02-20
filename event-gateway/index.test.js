@@ -40,20 +40,6 @@ const subscribeUrl = `http://${subscribeHost}:${subscribePort}`
 
 
 
-let docker
-
-beforeAll( async () => {
-  await delay(3000)
-  docker = await spawnProcess(
-    'event-gateway',
-    'docker run -p 4000:4000 -p 4001:4001 serverless/event-gateway -dev -log-level DEBUG'
-  )
-})
-
-afterAll( async () => {
-  if( docker ) docker.kill('SIGHUP')
-})
-
 let eg
 
 beforeEach( async () => {
@@ -65,6 +51,16 @@ afterEach( () => {
   eg = null
 })
 
+/**
+ * Testing policy
+ *
+ * Normal test : we will not check response object from event-gateway. Since
+ *   - we will not specify rensponse format in our manual. Just writing link of event-gateway
+ *   - it will be increasing const of maintanance of testing code
+ *   . We will just check a count of list to check whether success or not.
+ * Error test : check status code from error message
+ *
+ */
 describe('function test', () => {
   test('registUrl()', async () => {
     let list = await eg.listFunctions()

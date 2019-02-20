@@ -1,14 +1,14 @@
 {
   "name": "skyway-m-pipe-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "SDK for m-pipe",
   "engines": {
     "node": ">=10.15.0"
   },
   "main": "index.js",
   "scripts": {
-    "test": "NO_DOCKER_LOG=true TRACE=off jest",
-    "test:watch": "NO_DOCKER_LOG=true TRACE=off jest --watch",
+    "test": "NO_CHILD_PROCESS_LOG=true TRACE=off jest",
+    "test:watch": "NO_CHILD_PROCESS_LOG=true TRACE=off jest --watch",
     "lint": "eslint ./"
   },
   "author": "NTT Communications <skyway@ntt.com> (http://skyway.io)",

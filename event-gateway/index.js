@@ -51,6 +51,10 @@ class EventGateway {
   async registUrl(functionId, url) {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/functions`
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       functionId,
       type: 'http',
@@ -59,7 +63,7 @@ class EventGateway {
       }
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -102,11 +106,15 @@ class EventGateway {
   async createEvent(name) {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/eventtypes`
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       name
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -154,6 +162,10 @@ class EventGateway {
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.ctrlPort}/v1/spaces/${this.props.space}/subscriptions`
     const _path = path || '/'
 
+    const headers = {
+      "Content-Type": "application/json"
+    }
+
     const body = {
       type: 'async',
       eventType,
@@ -161,7 +173,7 @@ class EventGateway {
       path: _path
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
   /**
@@ -207,6 +219,10 @@ class EventGateway {
     const _path = path || '/'
     const endpoint = `${this.props.protocol}://${this.props.host}:${this.props.port}${_path}`
 
+    const headers = {
+      "Content-Type": "application/cloudevents+json"
+    }
+
     const body = {
       eventType,
       eventID: uuidv4(),
@@ -217,7 +233,7 @@ class EventGateway {
       contentType: 'application/json'
     }
 
-    return await this._post( endpoint, body )
+    return await this._post( endpoint, headers, body )
   }
 
 
@@ -254,18 +270,17 @@ class EventGateway {
    * post
    *
    * @param {string} url
+   * @param {object} headers
    * @param {object} data
    * @return {Promise<object>}
    *
    * @private
    */
-  async _post( url, data ) {
+  async _post( url, headers, data ) {
     try {
       const options = {
         method: 'POST',
-        headers: {
-          "Content-Type": "application/cloudevents+json",
-        },
+        headers,
         body: JSON.stringify(data)
       }
       const res = await fetchWithReconnection(
