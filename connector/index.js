@@ -1,5 +1,3 @@
-const base64GoogleCredentials = process.env.BASE64_GOOGLE_CREDENTIALS
-const projectId = process.env.G_PROJECT_ID
 const mpipeTraceContext = process.env.MPIPE_TRACE_CONTEXT || null
 const IN_HOST  = process.env.IN_HOST
 const IN_PORT  = process.env.IN_PORT
@@ -8,11 +6,6 @@ const TOKEN    = process.env.TOKEN
 const trace = process.env.TRACE // when `TRACE` is `off`, we will not start tracer
 
 const MPIPE_STREAM_STATUS = 'MPIPE_STREAM_STATUS'
-
-const {
-  base64ToObj
-} = require('../libs/util')
-
 
 /////////////////////////////////////////////////////////////////////////////////////
 // BEGIN: initialize trace agent
@@ -27,17 +20,8 @@ const {
 let tracer
 
 if( trace !== 'off' ) {
-  if( base64GoogleCredentials && projectId ) {
-    // In case local development
-    const credentials = base64ToObj( base64GoogleCredentials )
-    tracer = require('@google-cloud/trace-agent').start({
-      projectId,
-      credentials
-    })
-  } else {
-    // On GKE
-    tracer = require('@google-cloud/trace-agent').start({})
-  }
+  // On GKE
+  tracer = require('@google-cloud/trace-agent').start({})
 } else {
   tracer = {}
   tracer.runInRootSpan = ( params, cb ) => {
