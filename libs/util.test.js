@@ -3,8 +3,7 @@ const {
   fetchWithReconnection,
   delay,
   base64ToObj,
-  objToBase64,
-  spawnProcess
+  objToBase64
 } = require('./util')
 
 describe('fetchWithTimeout test', () => {

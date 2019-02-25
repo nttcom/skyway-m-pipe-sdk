@@ -29,11 +29,6 @@ class TestServer extends EventEmitter {
   }
 }
 
-const {
-  delay,
-  spawnProcess
-} = require('../libs/util')
-
 const subscribePort = 4002
 const subscribeHost = "host.docker.internal"
 const subscribeUrl = `http://${subscribeHost}:${subscribePort}`
